@@ -1,0 +1,5 @@
+.android/
+.devenv.flake.nix
+.devenv/
+local.properties
+result
