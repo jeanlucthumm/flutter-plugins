@@ -202,3 +202,39 @@ class HealthDataPoint {
   int get hashCode => Object.hash(uuid, value, unit, dateFrom, dateTo, type,
       sourcePlatform, sourceDeviceId, sourceId, sourceName, metadata);
 }
+
+/// Represents the result of an anchored health data query, containing both
+/// new/updated data points and information about deleted entries.
+@JsonSerializable(includeIfNull: false, explicitToJson: true)
+class AnchoredHealthData {
+  /// List of new or updated health data points
+  final List<HealthDataPoint> newData;
+
+  /// List of UUIDs for health data points that have been deleted
+  final List<String> deletedUuids;
+
+  /// Opaque string representing the new anchor point for subsequent queries.
+  /// This should be stored and passed to the next query to receive only
+  /// changes since this query.
+  final String? newAnchor;
+
+  /// Creates an [AnchoredHealthData] instance
+  AnchoredHealthData({
+    required this.newData,
+    required this.deletedUuids,
+    this.newAnchor,
+  });
+
+  /// Create an [AnchoredHealthData] from json
+  factory AnchoredHealthData.fromJson(Map<String, dynamic> json) =>
+      _$AnchoredHealthDataFromJson(json);
+
+  /// Convert this [AnchoredHealthData] to json
+  Map<String, dynamic> toJson() => _$AnchoredHealthDataToJson(this);
+
+  @override
+  String toString() => '''$runtimeType -
+    newData: ${newData.length} items,
+    deletedUuids: ${deletedUuids.length} items,
+    newAnchor: $newAnchor''';
+}

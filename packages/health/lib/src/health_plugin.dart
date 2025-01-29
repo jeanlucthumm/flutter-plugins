@@ -1337,4 +1337,69 @@ class Health {
       HealthWorkoutActivityType.OTHER,
     }.contains(type);
   }
+
+  /// Fetches health data using an anchor-based approach.
+  /// This is currently only supported on iOS.
+  ///
+  /// The anchor-based query allows for efficient syncing by only returning data
+  /// that has changed since the last query. The first query (with no anchor)
+  /// returns all matching data.
+  ///
+  /// [type] - The type of health data to fetch
+  /// [anchor] - Optional anchor from previous query
+  /// [limit] - Maximum number of new samples to fetch (default: 100)
+  ///
+  /// Throws a [HealthException] if:
+  /// * The platform is not iOS
+  /// * The type is not available on the platform
+  /// * The user has not granted permission for this type
+  Future<AnchoredHealthData> getAnchoredHealthData({
+    required HealthDataType type,
+    String? anchor,
+    int limit = 100,
+  }) async {
+    if (!Platform.isIOS) {
+      throw HealthException(
+        type,
+        'Anchor-based querying is currently only supported on iOS',
+      );
+    }
+
+    final args = <String, dynamic>{
+      'dataTypeKey': type.name,
+      'anchor': anchor,
+      'limit': limit,
+    };
+
+    try {
+      final result = await _channel.invokeMethod('getAnchoredData', args);
+
+      if (result == null) {
+        return AnchoredHealthData(newData: [], deletedUuids: []);
+      }
+
+      final dataPoints = (result['newData'] as List?)
+              ?.map((dataPoint) => HealthDataPoint.fromHealthDataPoint(
+                    type,
+                    dataPoint,
+                  ))
+              .toList() ??
+          [];
+
+      final deletedUuids = (result['deletedUuids'] as List?)
+              ?.map<String>((uuid) => uuid.toString())
+              .toList() ??
+          [];
+
+      final newAnchor = result['anchor'] as String?;
+
+      return AnchoredHealthData(
+        newData: dataPoints,
+        deletedUuids: deletedUuids,
+        newAnchor: newAnchor,
+      );
+    } catch (error) {
+      throw HealthException(type, error.toString());
+    }
+  }
 }
