@@ -780,7 +780,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         HKHealthStore().execute(deleteQuery)
     }
 
-    private func processData(samples: [HKSample]?, dataTypeKey: String, unit: HKUnit?) -> [NSDictionary]? {
+    private func processData(samples: [HKSample]?, dataTypeKey: String, unit: HKUnit?)
+        -> [NSDictionary]?
+    {
         guard let samples = samples else { return nil }
 
         switch samples {
@@ -793,7 +795,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
                     "source_id": sample.sourceRevision.source.bundleIdentifier,
                     "source_name": sample.sourceRevision.source.name,
-                    "recording_method": (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+                    "recording_method":
+                        (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
                         ? RecordingMethod.manual.rawValue
                         : RecordingMethod.automatic.rawValue,
                     "metadata": dataTypeKey == INSULIN_DELIVERY ? sample.metadata : nil,
@@ -856,10 +859,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
                     "source_id": sample.sourceRevision.source.bundleIdentifier,
                     "source_name": sample.sourceRevision.source.name,
-                    "recording_method": (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+                    "recording_method":
+                        (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
                         ? RecordingMethod.manual.rawValue
                         : RecordingMethod.automatic.rawValue,
-                    "metadata": metadata
+                    "metadata": metadata,
                 ])
             }
 
@@ -879,7 +883,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
                     "source_id": sample.sourceRevision.source.bundleIdentifier,
                     "source_name": sample.sourceRevision.source.name,
-                    "recording_method": (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+                    "recording_method":
+                        (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
                         ? RecordingMethod.manual.rawValue
                         : RecordingMethod.automatic.rawValue,
                     "workout_type": self.getWorkoutType(type: sample.workoutActivityType),
@@ -891,13 +896,13 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
 
         case let nutritionSamples as [HKCorrelation]:
-            var foods: [[String: Any?]] = []
+            var foods: [NSDictionary] = []
             for food in nutritionSamples {
                 let name = food.metadata?[HKMetadataKeyFoodType] as? String
                 let mealType = food.metadata?["HKFoodMeal"]
                 let samples = food.objects
                 if let sample = samples.first as? HKQuantitySample {
-                    var sampleDict = [
+                    var sampleDict: [String: Any?] = [
                         "uuid": "\(sample.uuid)",
                         "name": name,
                         "meal_type": mealType,
@@ -926,7 +931,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                             }
                         }
                     }
-                    foods.append(sampleDict)
+                    foods.append(NSDictionary(dictionary: sampleDict))
                 }
             }
             return foods
