@@ -3,3 +3,4 @@
 .devenv/
 local.properties
 result
+devenv.nix.local
