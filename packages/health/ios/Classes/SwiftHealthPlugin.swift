@@ -1923,18 +1923,34 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
     }
 
     private func getAnchoredData(call: FlutterMethodCall, result: @escaping FlutterResult) {
-        guard let arguments = call.arguments as? NSDictionary,
-            let type = (arguments["dataTypeKey"] as? String),
-            let limit = (arguments["limit"] as? Int),
-            let anchorString = (arguments["anchor"] as? String?)
-        else {
+        guard let arguments = call.arguments as? NSDictionary else {
             result(
                 FlutterError(
                     code: "INVALID_ARGUMENTS",
-                    message: "Invalid arguments",
+                    message: "Arguments must be a dictionary",
                     details: nil))
             return
         }
+        
+        guard let type = arguments["dataTypeKey"] as? String else {
+            result(
+                FlutterError(
+                    code: "INVALID_ARGUMENTS", 
+                    message: "dataTypeKey argument is missing or not a string",
+                    details: nil))
+            return
+        }
+        
+        guard let limit = arguments["limit"] as? Int else {
+            result(
+                FlutterError(
+                    code: "INVALID_ARGUMENTS",
+                    message: "limit argument is missing or not an integer",
+                    details: nil))
+            return
+        }
+
+        let anchorString = arguments["anchor"] as? String
 
         let dataType = dataTypeLookUp(key: type)
 
