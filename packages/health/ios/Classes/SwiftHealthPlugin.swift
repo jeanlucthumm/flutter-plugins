@@ -780,28 +780,25 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         HKHealthStore().execute(deleteQuery)
     }
 
-    private func processData(samples: [HKSample]?, dataTypeKey: String, unit: HKUnit?) -> [[String:
-        Any]]?
-    {
+    private func processData(samples: [HKSample]?, dataTypeKey: String, unit: HKUnit?) -> [NSDictionary]? {
         guard let samples = samples else { return nil }
 
         switch samples {
         case let quantitySamples as [HKQuantitySample]:
             return quantitySamples.map { sample -> NSDictionary in
-                return [
+                return NSDictionary(dictionary: [
                     "uuid": "\(sample.uuid)",
                     "value": sample.quantity.doubleValue(for: unit ?? HKUnit.internationalUnit()),
                     "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
                     "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
                     "source_id": sample.sourceRevision.source.bundleIdentifier,
                     "source_name": sample.sourceRevision.source.name,
-                    "recording_method":
-                        (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+                    "recording_method": (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
                         ? RecordingMethod.manual.rawValue
                         : RecordingMethod.automatic.rawValue,
                     "metadata": dataTypeKey == INSULIN_DELIVERY ? sample.metadata : nil,
                     "dataUnitKey": unit?.unitString,
-                ]
+                ])
             }
 
         case let categorySamples as [HKCategorySample]:
@@ -852,23 +849,23 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     }
                 }
 
-                return [
+                return NSDictionary(dictionary: [
                     "uuid": "\(sample.uuid)",
                     "value": sample.value,
                     "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
                     "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
                     "source_id": sample.sourceRevision.source.bundleIdentifier,
                     "source_name": sample.sourceRevision.source.name,
-                    "recording_method":
-                        (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
-                        ? RecordingMethod.manual.rawValue : RecordingMethod.automatic.rawValue,
-                    "metadata": metadata,
-                ]
+                    "recording_method": (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+                        ? RecordingMethod.manual.rawValue
+                        : RecordingMethod.automatic.rawValue,
+                    "metadata": metadata
+                ])
             }
 
         case let workoutSamples as [HKWorkout]:
             return workoutSamples.map { sample -> NSDictionary in
-                return [
+                return NSDictionary(dictionary: [
                     "uuid": "\(sample.uuid)",
                     "workoutActivityType": workoutActivityTypeMap.first(where: {
                         $0.value == sample.workoutActivityType
@@ -882,15 +879,15 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
                     "source_id": sample.sourceRevision.source.bundleIdentifier,
                     "source_name": sample.sourceRevision.source.name,
-                    "recording_method":
-                        (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
-                        ? RecordingMethod.manual.rawValue : RecordingMethod.automatic.rawValue,
+                    "recording_method": (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool == true)
+                        ? RecordingMethod.manual.rawValue
+                        : RecordingMethod.automatic.rawValue,
                     "workout_type": self.getWorkoutType(type: sample.workoutActivityType),
                     "total_distance": sample.totalDistance != nil
                         ? Int(sample.totalDistance!.doubleValue(for: HKUnit.meter())) : 0,
                     "total_energy_burned": sample.totalEnergyBurned != nil
                         ? Int(sample.totalEnergyBurned!.doubleValue(for: HKUnit.kilocalorie())) : 0,
-                ]
+                ])
             }
 
         case let nutritionSamples as [HKCorrelation]:
