@@ -1931,16 +1931,16 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     details: nil))
             return
         }
-        
+
         guard let type = arguments["dataTypeKey"] as? String else {
             result(
                 FlutterError(
-                    code: "INVALID_ARGUMENTS", 
+                    code: "INVALID_ARGUMENTS",
                     message: "dataTypeKey argument is missing or not a string",
                     details: nil))
             return
         }
-        
+
         guard let limit = arguments["limit"] as? Int else {
             result(
                 FlutterError(
@@ -1951,6 +1951,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
 
         let anchorString = arguments["anchor"] as? String
+        let dataUnitKey = arguments["dataUnitKey"] as? String
+        var unit: HKUnit?
+        if let dataUnitKey = dataUnitKey {
+            unit = unitDict[dataUnitKey]
+        }
 
         let dataType = dataTypeLookUp(key: type)
 
@@ -1980,7 +1985,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
 
             // Convert samples using the same processing logic
-            let processedData = processData(samples: samplesOrNil, dataTypeKey: type, unit: nil)
+            let processedData = processData(
+                samples: samplesOrNil, dataTypeKey: type, unit: unit)
 
             // Get deleted object UUIDs
             let deletedUuids = deletedObjectsOrNil?.map { $0.uuid.uuidString } ?? []

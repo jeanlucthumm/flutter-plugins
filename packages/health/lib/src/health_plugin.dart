@@ -1345,7 +1345,7 @@ class Health {
   /// that has changed since the last query. The first query (with no anchor)
   /// returns all matching data.
   ///
-  /// [type] - The type of health data to fetch
+  /// [dataType] - The type of health data to fetch
   /// [anchor] - Optional anchor from previous query
   /// [limit] - Maximum number of new samples to fetch (default: 100)
   ///
@@ -1354,33 +1354,36 @@ class Health {
   /// * The type is not available on the platform
   /// * The user has not granted permission for this type
   Future<AnchoredHealthData> getAnchoredHealthData({
-    required HealthDataType type,
+    required HealthDataType dataType,
     String? anchor,
     int limit = 100,
   }) async {
     if (!Platform.isIOS) {
       throw HealthException(
-        type,
+        dataType,
         'Anchor-based querying is currently only supported on iOS',
       );
     }
 
     final args = <String, dynamic>{
-      'dataTypeKey': type.name,
+      'dataTypeKey': dataType.name,
+      'dataUnitKey': dataTypeToUnit[dataType]!.name,
       'anchor': anchor,
       'limit': limit,
     };
-
     try {
       final result = await _channel.invokeMethod('getAnchoredData', args);
 
       if (result == null) {
-        return AnchoredHealthData(newData: [], deletedUuids: []);
+        return AnchoredHealthData(
+          newData: [],
+          deletedUuids: [],
+        );
       }
 
       final dataPoints = (result['newData'] as List?)
               ?.map((dataPoint) => HealthDataPoint.fromHealthDataPoint(
-                    type,
+                    dataType,
                     dataPoint,
                   ))
               .toList() ??
@@ -1398,8 +1401,8 @@ class Health {
         deletedUuids: deletedUuids,
         newAnchor: newAnchor,
       );
-    } catch (error) {
-      throw HealthException(type, error.toString());
+    } catch (e) {
+      throw HealthException(dataType, e.toString());
     }
   }
 }
