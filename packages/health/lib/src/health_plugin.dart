@@ -1343,7 +1343,11 @@ class Health {
   ///
   /// The anchor-based query allows for efficient syncing by only returning data
   /// that has changed since the last query. The first query (with no anchor)
-  /// returns all matching data.
+  /// returns all matching data. If the returned data's anchor is the same as the
+  /// anchor provided in the query, it means no new data has been added.
+  ///
+  /// Calling with no anchor and a limit will effectively paginate the data, going up
+  /// from last data point.
   ///
   /// [dataType] - The type of health data to fetch
   /// [anchor] - Optional anchor from previous query
