@@ -848,7 +848,12 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                 var metadata: [String: Any] = [:]
                 if let sampleMetadata = sample.metadata {
                     for (key, value) in sampleMetadata {
-                        metadata[key] = value
+                        if let date = value as? Date {
+                            // Convert Date objects to milliseconds
+                            metadata[key] = Int(date.timeIntervalSince1970 * 1000)
+                        } else {
+                            metadata[key] = value
+                        }
                     }
                 }
 
