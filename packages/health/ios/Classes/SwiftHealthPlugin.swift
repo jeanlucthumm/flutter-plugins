@@ -1929,7 +1929,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
 
         guard let type = arguments["dataTypeKey"] as? String else {
-            throw PluginError(message: "dataTypeKey argument is missing or not a string") 
+            throw PluginError(message: "dataTypeKey argument is missing or not a string")
         }
 
         guard let limit = arguments["limit"] as? Int else {
