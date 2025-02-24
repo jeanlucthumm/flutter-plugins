@@ -1,5 +1,10 @@
 {pkgs, ...}: {
-  packages = with pkgs; [nushell sourcekit-lsp];
+  packages = with pkgs; [
+    nushell
+    sourcekit-lsp
+    lldb
+    swiftformat
+  ];
 
   languages = {
     swift.enable = true;
