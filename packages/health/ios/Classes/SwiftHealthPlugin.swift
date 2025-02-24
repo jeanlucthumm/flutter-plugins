@@ -282,7 +282,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                 try delete(call: call, result: result)
 
             case "getAnchoredData":
-                getAnchoredData(call: call, result: result)
+                try getAnchoredData(call: call, result: result)
 
             default:
                 result(FlutterMethodNotImplemented)
@@ -1923,35 +1923,17 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func getAnchoredData(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    private func getAnchoredData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary else {
-            result(
-                FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "Arguments must be a dictionary",
-                    details: nil
-                ))
-            return
+            throw PluginError(message: "Arguments must be a dictionary")
         }
 
         guard let type = arguments["dataTypeKey"] as? String else {
-            result(
-                FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "dataTypeKey argument is missing or not a string",
-                    details: nil
-                ))
-            return
+            throw PluginError(message: "dataTypeKey argument is missing or not a string") 
         }
 
         guard let limit = arguments["limit"] as? Int else {
-            result(
-                FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "limit argument is missing or not an integer",
-                    details: nil
-                ))
-            return
+            throw PluginError(message: "limit argument is missing or not an integer")
         }
 
         let anchorString = arguments["anchor"] as? String
@@ -1979,14 +1961,21 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             predicate: nil,
             anchor: anchor,
             limit: limit
-        ) { [self] _, samplesOrNil, deletedObjectsOrNil, newAnchor, errorOrNil in
-            if let error = errorOrNil {
-                result(
-                    FlutterError(
-                        code: "QUERY_FAILED",
-                        message: error.localizedDescription,
-                        details: nil
-                    ))
+        ) { [weak self] _, samplesOrNil, deletedObjectsOrNil, newAnchor, error in
+            guard let self = self else {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "fatal_error",
+                            message: "self not available in callback",
+                            details: nil
+                        ))
+                }
+                return
+            }
+
+            if let error = error {
+                handleHealthKitCompletion(result, error: error)
                 return
             }
 

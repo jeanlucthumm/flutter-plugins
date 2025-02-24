@@ -37,15 +37,13 @@ class HealthError implements Exception {
   });
 
   /// Creates a HealthError from a PlatformException
-  factory HealthError.fromPlatformException(PlatformException e) {
-    return HealthError(
-      code: e.code,
-      message: e.message ?? 'Unknown error',
-      details: e.details is Map<String, dynamic>
-          ? e.details as Map<String, dynamic>
-          : null,
-    );
-  }
+  factory HealthError.fromPlatformException(PlatformException e) => HealthError(
+        code: e.code,
+        message: e.message ?? 'Unknown error',
+        details: e.details is Map<String, dynamic>
+            ? e.details as Map<String, dynamic>
+            : null,
+      );
 
   /// Returns true if this error is related to authorization/permissions
   bool get isAuthorizationError =>

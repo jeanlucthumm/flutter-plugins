@@ -257,9 +257,16 @@ class Health {
     if (Platform.isAndroid) _handleBMI(mTypes, mPermissions);
 
     List<String> keys = mTypes.map((e) => e.name).toList();
-    final bool? isAuthorized = await _channel.invokeMethod(
-        'requestAuthorization', {'types': keys, "permissions": mPermissions});
-    return isAuthorized ?? false;
+    try {
+      final result = await _channel.invokeMethod<bool>(
+          'requestAuthorization', {'types': keys, "permissions": mPermissions});
+      if (result == null) {
+        throw Exception('Unexpected null result from requestAuthorization');
+      }
+      return result;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Obtains health and weight if BMI is requested on Android.
@@ -410,8 +417,15 @@ class Health {
       'endTime': endTime.millisecondsSinceEpoch,
       'recordingMethod': recordingMethod.toInt(),
     };
-    bool? success = await _channel.invokeMethod('writeData', args);
-    return success ?? false;
+    try {
+      final success = await _channel.invokeMethod<bool>('writeData', args);
+      if (success == null) {
+        throw Exception('Unexpected null result from writeData');
+      }
+      return success;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Deletes all records of the given [type] for a given period of time.
@@ -440,8 +454,15 @@ class Health {
       'startTime': startTime.millisecondsSinceEpoch,
       'endTime': endTime.millisecondsSinceEpoch
     };
-    bool? success = await _channel.invokeMethod('delete', args);
-    return success ?? false;
+    try {
+      final success = await _channel.invokeMethod<bool>('delete', args);
+      if (success == null) {
+        throw Exception('Unexpected null result from delete');
+      }
+      return success;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Saves a blood pressure record.
@@ -484,7 +505,16 @@ class Health {
       'endTime': endTime.millisecondsSinceEpoch,
       'recordingMethod': recordingMethod.toInt(),
     };
-    return await _channel.invokeMethod('writeBloodPressure', args) == true;
+    try {
+      final success =
+          await _channel.invokeMethod<bool>('writeBloodPressure', args);
+      if (success == null) {
+        throw Exception('Unexpected null result from writeBloodPressure');
+      }
+      return success;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Saves blood oxygen saturation record.
@@ -517,10 +547,8 @@ class Health {
     if (startTime.isAfter(endTime)) {
       throw ArgumentError("startTime must be equal or earlier than endTime");
     }
-    bool? success;
-
     if (Platform.isIOS) {
-      success = await writeHealthData(
+      return await writeHealthData(
           value: saturation,
           type: HealthDataType.BLOOD_OXYGEN,
           startTime: startTime,
@@ -534,9 +562,18 @@ class Health {
         'dataTypeKey': HealthDataType.BLOOD_OXYGEN.name,
         'recordingMethod': recordingMethod.toInt(),
       };
-      success = await _channel.invokeMethod('writeBloodOxygen', args);
+      try {
+        final success =
+            await _channel.invokeMethod<bool>('writeBloodOxygen', args);
+        if (success == null) {
+          throw Exception('Unexpected null result from writeBloodOxygen');
+        }
+        return success;
+      } on PlatformException catch (error) {
+        throw HealthError.fromPlatformException(error);
+      }
     }
-    return success ?? false;
+    return false;
   }
 
   /// Saves meal record into Apple Health or Health Connect.
@@ -699,8 +736,15 @@ class Health {
       'zinc': zinc,
       'recordingMethod': recordingMethod.toInt(),
     };
-    bool? success = await _channel.invokeMethod('writeMeal', args);
-    return success ?? false;
+    try {
+      final success = await _channel.invokeMethod<bool>('writeMeal', args);
+      if (success == null) {
+        throw Exception('Unexpected null result from writeMeal');
+      }
+      return success;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Save menstruation flow into Apple Health and Google Health Connect.
@@ -744,7 +788,16 @@ class Health {
       'dataTypeKey': HealthDataType.MENSTRUATION_FLOW.name,
       'recordingMethod': recordingMethod.toInt(),
     };
-    return await _channel.invokeMethod('writeMenstruationFlow', args) == true;
+    try {
+      final success =
+          await _channel.invokeMethod<bool>('writeMenstruationFlow', args);
+      if (success == null) {
+        throw Exception('Unexpected null result from writeMenstruationFlow');
+      }
+      return success;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Saves audiogram into Apple Health. Not supported on Android.
@@ -799,7 +852,15 @@ class Health {
       'endTime': endTime.millisecondsSinceEpoch,
       'metadata': metadata,
     };
-    return await _channel.invokeMethod('writeAudiogram', args) == true;
+    try {
+      final success = await _channel.invokeMethod<bool>('writeAudiogram', args);
+      if (success == null) {
+        throw Exception('Unexpected null result from writeAudiogram');
+      }
+      return success;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Saves insulin delivery record into Apple Health.
@@ -839,8 +900,16 @@ class Health {
       'endTime': endTime.millisecondsSinceEpoch
     };
 
-    bool? success = await _channel.invokeMethod('writeInsulinDelivery', args);
-    return success ?? false;
+    try {
+      final success =
+          await _channel.invokeMethod<bool>('writeInsulinDelivery', args);
+      if (success == null) {
+        throw Exception('Unexpected null result from writeInsulinDelivery');
+      }
+      return success;
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
+    }
   }
 
   /// Fetch a list of health data points based on [types].
@@ -993,9 +1062,13 @@ class Health {
       'recordingMethodsToFilter':
           recordingMethodsToFilter.map((e) => e.toInt()).toList(),
     };
-    final fetchedDataPoints = await _channel.invokeMethod('getData', args);
+    try {
+      final fetchedDataPoints =
+          await _channel.invokeMethod<List<dynamic>>('getData', args);
+      if (fetchedDataPoints == null) {
+        return <HealthDataPoint>[];
+      }
 
-    if (fetchedDataPoints != null && fetchedDataPoints is List) {
       final msg = <String, dynamic>{
         "dataType": dataType,
         "dataPoints": fetchedDataPoints,
@@ -1007,11 +1080,12 @@ class Health {
         return compute(_parse, msg);
       }
       return _parse(msg);
-    } else {
-      return <HealthDataPoint>[];
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
     }
   }
 
+  // TODO: Add error handling
   /// function for fetching statistic health data
   Future<List<HealthDataPoint>> _dataIntervalQuery(
       DateTime startDate,
@@ -1041,6 +1115,7 @@ class Health {
     return <HealthDataPoint>[];
   }
 
+  // TODO: Add error handling
   /// function for fetching statistic health data
   Future<List<HealthDataPoint>> _dataAggregateQuery(
       DateTime startDate,
@@ -1376,7 +1451,8 @@ class Health {
       'limit': limit,
     };
     try {
-      final result = await _channel.invokeMethod('getAnchoredData', args);
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+          'getAnchoredData', args);
 
       if (result == null) {
         return AnchoredHealthData(
@@ -1405,8 +1481,8 @@ class Health {
         deletedUuids: deletedUuids,
         newAnchor: newAnchor,
       );
-    } catch (e) {
-      throw HealthException(dataType, e.toString());
+    } on PlatformException catch (error) {
+      throw HealthError.fromPlatformException(error);
     }
   }
 }
