@@ -221,6 +221,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let message: String
     }
 
+    struct VersionError: Error {
+        let method: String
+        let iosVersion: Int
+    }
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(
             name: "flutter_health", binaryMessenger: registrar.messenger())
@@ -231,52 +236,64 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         // Set up all data types
         initializeTypes()
-
-        /// Handle checkIfHealthDataAvailable
-        if call.method.elementsEqual("checkIfHealthDataAvailable") {
-            checkIfHealthDataAvailable(call: call, result: result)
-        }/// Handle requestAuthorization
-        else if call.method.elementsEqual("requestAuthorization") {
-            try! requestAuthorization(call: call, result: result)
-        }/// Handle getData
-        else if call.method.elementsEqual("getData") {
-            getData(call: call, result: result)
-        }/// Handle getIntervalData
-        else if call.method.elementsEqual("getIntervalData") {
-            getIntervalData(call: call, result: result)
-        }/// Handle getTotalStepsInInterval
-        else if call.method.elementsEqual("getTotalStepsInInterval") {
-            getTotalStepsInInterval(call: call, result: result)
-        }/// Handle writeData
-        else if call.method.elementsEqual("writeData") {
-            try! writeData(call: call, result: result)
-        }/// Handle writeAudiogram
-        else if call.method.elementsEqual("writeAudiogram") {
-            try! writeAudiogram(call: call, result: result)
-        }/// Handle writeBloodPressure
-        else if call.method.elementsEqual("writeBloodPressure") {
-            try! writeBloodPressure(call: call, result: result)
-        }/// Handle writeMeal
-        else if call.method.elementsEqual("writeMeal") {
-            try! writeMeal(call: call, result: result)
-        }/// Handle writeInsulinDelivery
-        else if call.method.elementsEqual("writeInsulinDelivery") {
-            try! writeInsulinDelivery(call: call, result: result)
-        }/// Handle writeWorkoutData
-        else if call.method.elementsEqual("writeWorkoutData") {
-            try! writeWorkoutData(call: call, result: result)
-        }/// Handle writeMenstruationFlow
-        else if call.method.elementsEqual("writeMenstruationFlow") {
-            try! writeMenstruationFlow(call: call, result: result)
-        }/// Handle hasPermission
-        else if call.method.elementsEqual("hasPermissions") {
-            try! hasPermissions(call: call, result: result)
-        }/// Handle delete data
-        else if call.method.elementsEqual("delete") {
-            try! delete(call: call, result: result)
-        }/// Handle getAnchoredData
-        else if call.method.elementsEqual("getAnchoredData") {
-            getAnchoredData(call: call, result: result)
+        
+        do {
+            switch call.method {
+            case "checkIfHealthDataAvailable":
+                checkIfHealthDataAvailable(call: call, result: result)
+                
+            case "requestAuthorization":
+                try requestAuthorization(call: call, result: result)
+                
+            case "getData":
+                try getData(call: call, result: result)
+                
+            case "getIntervalData":
+                getIntervalData(call: call, result: result)
+                
+            case "getTotalStepsInInterval":
+                getTotalStepsInInterval(call: call, result: result)
+                
+            case "writeData":
+                try writeData(call: call, result: result)
+                
+            case "writeAudiogram":
+                try writeAudiogram(call: call, result: result)
+                
+            case "writeBloodPressure":
+                try writeBloodPressure(call: call, result: result)
+                
+            case "writeMeal":
+                try writeMeal(call: call, result: result)
+                
+            case "writeInsulinDelivery":
+                try writeInsulinDelivery(call: call, result: result)
+                
+            case "writeWorkoutData":
+                try writeWorkoutData(call: call, result: result)
+                
+            case "writeMenstruationFlow":
+                try writeMenstruationFlow(call: call, result: result)
+                
+            case "hasPermissions":
+                try hasPermissions(call: call, result: result)
+                
+            case "delete":
+                try delete(call: call, result: result)
+                
+            case "getAnchoredData":
+                getAnchoredData(call: call, result: result)
+                
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        } catch let error as PluginError {
+            result(FlutterError(code: "plugin_error", message: error.message, details: nil))
+        } catch let error as VersionError {
+            let msg = "Method \(error.method) is only available on iOS \(error.iosVersion) or newer"
+            result(FlutterError(code: "version_error", message: msg, details: nil))
+        } catch {
+            result(FlutterError(code: "unknown_error", message: error.localizedDescription, details: nil))
         }
     }
 
@@ -324,8 +341,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         result(true)
     }
 
-    func hasPermission(type: HKObjectType, access: Int) -> Bool? {
-
+    func hasPermission(type: HKObjectType, access: Int) throws -> Bool? {
         if #available(iOS 13.0, *) {
             let status = healthStore.authorizationStatus(for: type)
             switch access {
@@ -337,7 +353,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                 return nil
             }
         } else {
-            return nil
+            throw VersionError(method: "hasPermission", iosVersion: 13)
         }
     }
 
@@ -389,13 +405,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
         if #available(iOS 13.0, *) {
             healthStore.requestAuthorization(toShare: typesToWrite, read: typesToRead) {
-                (success, error) in
-                DispatchQueue.main.async {
-                    result(success)
-                }
+                success, error in
+                handleHealthKitCompletion(result, successValue: success, error: error)
             }
         } else {
-            result(false)  // Handle the error here.
+            throw VersionError(method: "requestAuthorization", iosVersion: 13)
         }
     }
 
@@ -434,16 +448,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                 end: dateTo, metadata: metadata)
         }
 
-        HKHealthStore().save(
-            sample,
-            withCompletion: { (success, error) in
-                if let err = error {
-                    print("Error Saving \(type) Sample: \(err.localizedDescription)")
-                }
-                DispatchQueue.main.async {
-                    result(success)
-                }
-            })
+        HKHealthStore().save(sample) { success, error in
+            handleHealthKitCompletion(result, successValue: success, error: error)
+        }
     }
 
     func writeAudiogram(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
@@ -473,7 +480,6 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
 
         let audiogram: HKAudiogramSample
-        let metadataReceived = (arguments["metadata"] as? [String: Any]?)
 
         if (metadataReceived) != nil {
             guard let deviceName = metadataReceived?!["HKDeviceName"] as? String else { return }
@@ -490,16 +496,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                 sensitivityPoints: sensitivityPoints, start: dateFrom, end: dateTo, metadata: nil)
         }
 
-        HKHealthStore().save(
-            audiogram,
-            withCompletion: { (success, error) in
-                if let err = error {
-                    print("Error Saving Audiogram. Sample: \(err.localizedDescription)")
-                }
-                DispatchQueue.main.async {
-                    result(success)
-                }
-            })
+        HKHealthStore().save(audiogram) { success, error in
+            handleHealthKitCompletion(result, successValue: success, error: error)
+        }
     }
 
     func writeBloodPressure(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
@@ -533,16 +532,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let blood_pressure_sample = HKCorrelation(
             type: bpCorrelationType, start: dateFrom, end: dateTo, objects: bpCorrelation)
 
-        HKHealthStore().save(
-            [blood_pressure_sample],
-            withCompletion: { (success, error) in
-                if let err = error {
-                    print("Error Saving Blood Pressure Sample: \(err.localizedDescription)")
-                }
-                DispatchQueue.main.async {
-                    result(success)
-                }
-            })
+        HKHealthStore().save([blood_pressure_sample]) { success, error in
+            handleHealthKitCompletion(result, successValue: success, error: error)
+        }
     }
 
     func writeMeal(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
@@ -595,20 +587,14 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             let meal = HKCorrelation(
                 type: type, start: dateFrom, end: dateTo, objects: nutrition, metadata: metadata)
 
-            HKHealthStore().save(
-                meal,
-                withCompletion: { (success, error) in
-                    if let err = error {
-                        print("Error Saving Meal Sample: \(err.localizedDescription)")
-                    }
-                    DispatchQueue.main.async {
-                        result(success)
-                    }
-                })
+            HKHealthStore().save(meal) { success, error in
+                handleHealthKitCompletion(result, successValue: success, error: error)
+            }
         } else {
-            result(false)
+            throw VersionError(method: "writeMeal", iosVersion: 15)
         }
     }
+
     func writeInsulinDelivery(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
             let units = (arguments["units"] as? Double),
@@ -628,16 +614,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let insulin_sample = HKQuantitySample(
             type: type, quantity: quantity, start: dateFrom, end: dateTo, metadata: metadata)
 
-        HKHealthStore().save(
-            insulin_sample,
-            withCompletion: { (success, error) in
-                if let err = error {
-                    print("Error Saving Insulin Delivery Sample: \(err.localizedDescription)")
-                }
-                DispatchQueue.main.async {
-                    result(success)
-                }
-            })
+        HKHealthStore().save(insulin_sample) { success, error in
+            handleHealthKitCompletion(result, successValue: success, error: error)
+        }
     }
 
     func writeMenstruationFlow(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
@@ -676,16 +655,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             metadata: metadata
         )
 
-        HKHealthStore().save(
-            sample,
-            withCompletion: { (success, error) in
-                if let err = error {
-                    print("Error Saving Menstruation Flow Sample: \(err.localizedDescription)")
-                }
-                DispatchQueue.main.async {
-                    result(success)
-                }
-            })
+        HKHealthStore().save(sample) { success, error in
+            handleHealthKitCompletion(result, successValue: success, error: error)
+        }
     }
 
     func writeWorkoutData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
@@ -723,16 +695,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             totalEnergyBurned: totalEnergyBurned ?? nil,
             totalDistance: totalDistance ?? nil, metadata: nil)
 
-        HKHealthStore().save(
-            workout,
-            withCompletion: { (success, error) in
-                if let err = error {
-                    print("Error Saving Workout. Sample: \(err.localizedDescription)")
-                }
-                DispatchQueue.main.async {
-                    result(success)
-                }
-            })
+        HKHealthStore().save(workout) { success, error in
+            handleHealthKitCompletion(result, successValue: success, error: error)
+        }
     }
 
     func delete(call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -758,22 +723,23 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             ]),
             limit: HKObjectQueryNoLimit,
             sortDescriptors: [sortDescriptor]
-        ) { [self] x, samplesOrNil, error in
-
-            guard let samplesOrNil = samplesOrNil, error == nil else {
-                // Handle the error if necessary
-                print("Error deleting \(dataType)")
+        ) { x, samplesOrNil, error in
+            if let error = error {
+                DispatchQueue.main.async {  
+                    result(healthKitErrorToFlutterError(error))
+                }
                 return
             }
 
-            // Delete the retrieved objects from the HealthKit store
-            HKHealthStore().delete(samplesOrNil) { (success, error) in
-                if let err = error {
-                    print("Error deleting \(dataType) Sample: \(err.localizedDescription)")
-                }
+            guard let samples = samplesOrNil, !samples.isEmpty else {
                 DispatchQueue.main.async {
-                    result(success)
+                    result(true)
                 }
+                return
+            }
+
+            HKHealthStore().delete(samples) { success, error in
+                handleHealthKitCompletion(result, successValue: success, error: error)
             }
         }
 
@@ -949,9 +915,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    func getData(call: FlutterMethodCall, result: @escaping FlutterResult) {
-        let arguments = call.arguments as? NSDictionary
-        let dataTypeKey = (arguments?["dataTypeKey"] as? String)!
+    func getData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+        guard let arguments = call.arguments as? NSDictionary,
+            let dataTypeKey = arguments["dataTypeKey"] as? String else {
+            throw PluginError(message: "Invalid Arguments")
+        }
         let dataUnitKey = (arguments?["dataUnitKey"] as? String)
         let startTime = (arguments?["startTime"] as? NSNumber) ?? 0
         let endTime = (arguments?["endTime"] as? NSNumber) ?? 0
@@ -1029,12 +997,10 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let query = HKSampleQuery(
             sampleType: dataType, predicate: predicate, limit: limit,
             sortDescriptors: [sortDescriptor]
-        ) { [self] x, samplesOrNil, error in
+        ) { [weak self] x, samplesOrNil, error in
+            guard let self = self else { return }
             if let err = error {
-                print("Error getting samples: \(err.localizedDescription)")
-                DispatchQueue.main.async {
-                    result(nil)
-                }
+                handleHealthKitCompletion(result, successValue: nil, error: err)
                 return
             }
 
@@ -1253,6 +1219,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         do {
             bioSex = try healthStore.biologicalSex().biologicalSex
         } catch {
+            // TODO: handle error
             bioSex = nil
             print("Error retrieving biologicalSex: \(error)")
         }
@@ -1264,6 +1231,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         do {
             dob = try healthStore.dateOfBirthComponents().date
         } catch {
+            // TODO: handle error
             dob = nil
             print("Error retrieving date of birth: \(error)")
         }
@@ -1275,6 +1243,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         do {
             bloodType = try healthStore.bloodType().bloodType
         } catch {
+            // TODO: handle error
             bloodType = nil
             print("Error retrieving blood type: \(error)")
         }
@@ -2016,5 +1985,67 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
 
         healthStore.execute(query)
+    }
+}
+
+private func healthKitErrorToFlutterError(_ error: Error) -> FlutterError {
+    let nsError = error as NSError
+    
+    // Get the HKError code if this is a HealthKit error
+    let hkError = nsError as? HKError
+    let errorCode = hkError?.code ?? nsError.code
+    
+    // Create base error details
+    var errorDetails: [String: Any] = [
+        "error": error.localizedDescription,
+        "errorCode": errorCode
+    ]
+    
+    // Determine specific error type and add appropriate metadata
+    let errorType: String
+    switch errorCode {
+    case HKError.Code.errorAuthorizationNotDetermined.rawValue:
+        errorType = "authorization_not_determined"
+    case HKError.Code.errorAuthorizationDenied.rawValue:
+        errorType = "authorization_denied"
+    case HKError.Code.errorAuthorizationRestricted.rawValue:
+        errorType = "authorization_restricted"
+    case HKError.Code.errorInvalidArgument.rawValue:
+        errorType = "invalid_argument"
+        errorDetails["invalidArgument"] = nsError.userInfo[HKErrorInvalidObjectKey]
+    case HKError.Code.errorDatabaseInaccessible.rawValue:
+        errorType = "database_inaccessible"
+    case HKError.Code.errorNoData.rawValue:
+        errorType = "no_data"
+    default:
+        errorType = "unknown_error"
+    }
+    
+    // Add any additional HealthKit-specific error information
+    if let failureReason = nsError.localizedFailureReason {
+        errorDetails["failureReason"] = failureReason
+    }
+    if let recoverySuggestion = nsError.localizedRecoverySuggestion {
+        errorDetails["recoverySuggestion"] = recoverySuggestion
+    }
+    
+    return FlutterError(
+        code: errorType,
+        message: error.localizedDescription,
+        details: errorDetails
+    )
+}
+
+func handleHealthKitCompletion<T>(
+    _ result: @escaping FlutterResult,
+    successValue: T? = nil,
+    error: Error?,
+) {
+    DispatchQueue.main.async {
+        if let error = error {
+            result(healthKitErrorToFlutterError(error))
+        } else {
+            result(successValue)
+        }
     }
 }
