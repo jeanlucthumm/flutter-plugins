@@ -469,3 +469,76 @@ The plugin supports the following [`HealthWorkoutActivityType`](https://pub.dev/
 
 This software is copyright (c) the [Technical University of Denmark (DTU)](https://www.dtu.dk) and is part of the [Copenhagen Research Platform](https://carp.cachet.dk/).
 This software is available 'as-is' under a [MIT license](LICENSE).
+
+# Health Plugin Error Handling
+
+The Health plugin now provides improved error handling with detailed error information from the native health platforms (Apple HealthKit and Google Health Connect).
+
+## Error Types
+
+The plugin uses two main error types:
+
+1. `HealthException` - Used for general errors related to health data types not being available on the current platform.
+
+2. `HealthError` - Provides detailed error information from the native health platforms, including:
+   - Error code
+   - Human-readable error message
+   - Additional details (when available)
+
+## Error Categories
+
+`HealthError` provides helper methods to identify common error categories:
+
+- `isAuthorizationError` - Permission/authorization related errors
+- `isVersionError` - iOS version requirement errors
+- `isInvalidArgumentError` - Invalid argument errors
+- `isDatabaseError` - Database access errors
+- `isNoDataError` - No data available errors
+
+## Example Usage
+
+```dart
+try {
+  final healthData = await health.getHealthDataFromTypes(
+    types: [HealthDataType.STEPS],
+    startTime: DateTime.now().subtract(Duration(days: 1)),
+    endTime: DateTime.now(),
+  );
+  // Process health data
+} on HealthError catch (e) {
+  if (e.isAuthorizationError) {
+    // Handle permission errors
+    print('Permission error: ${e.message}');
+  } else if (e.isVersionError) {
+    // Handle iOS version errors
+    print('Version error: ${e.message}');
+  } else {
+    // Handle other errors
+    print('Health error: ${e}');
+  }
+} on HealthException catch (e) {
+  // Handle data type not available errors
+  print('Health exception: ${e}');
+} catch (e) {
+  // Handle other errors
+  print('Error: ${e}');
+}
+```
+
+## iOS-Specific Error Codes
+
+On iOS, the plugin now provides more detailed error codes from HealthKit:
+
+- `authorization_not_determined` - Authorization status not determined
+- `authorization_denied` - Authorization denied by user
+- `authorization_restricted` - Authorization restricted (e.g., parental controls)
+- `invalid_argument` - Invalid argument provided
+- `database_inaccessible` - HealthKit database inaccessible
+- `no_data` - No data available
+- `version_error` - iOS version requirement not met
+- `plugin_error` - Error in the plugin implementation
+- `unknown_error` - Unknown error
+
+## Android-Specific Error Handling
+
+On Android, the plugin provides error information from Google Health Connect when available. The error handling is consistent with iOS, but the specific error codes may differ.
