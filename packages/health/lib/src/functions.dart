@@ -47,10 +47,9 @@ class HealthError implements Exception {
 
   /// Returns true if this error is related to authorization/permissions
   bool get isAuthorizationError =>
-      code == 'authorization_not_determined' ||
       code == 'authorization_denied' ||
-      code == 'authorization_restricted' ||
-      code == 'authorization_error';
+      code == 'authorization_not_determined' ||
+      code == 'required_authorization_denied';
 
   /// Returns true if this error is related to iOS version requirements
   bool get isVersionError =>
@@ -59,12 +58,6 @@ class HealthError implements Exception {
   /// Returns true if this error is related to invalid arguments
   bool get isInvalidArgumentError =>
       code == 'invalid_argument' || code == 'plugin_error';
-
-  /// Returns true if this error is related to database access
-  bool get isDatabaseError => code == 'database_inaccessible';
-
-  /// Returns true if this error is related to no data being available
-  bool get isNoDataError => code == 'no_data';
 
   @override
   String toString() {

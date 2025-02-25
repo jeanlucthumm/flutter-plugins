@@ -745,7 +745,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         ) { _, samplesOrNil, error in
             if let error = error {
                 DispatchQueue.main.async {
-                    result(healthKitErrorToFlutterError(error))
+                    result(convertError(error))
                 }
                 return
             }
@@ -2014,64 +2014,60 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
     }
 }
 
-private func healthKitErrorToFlutterError(_ error: Error) -> FlutterError {
-    let nsError = error as NSError
-
-    // Get the HKError code if this is a HealthKit error
-    let errorCode = nsError.code
-
-    // Create base error details
-    var errorDetails: [String: Any] = [
-        "error": error.localizedDescription,
-        "errorCode": errorCode,
-        "domain": nsError.domain,
-    ]
-
-    // Determine specific error type and add appropriate metadata
-    let errorType: String
-
-    // Check if this is a HealthKit error
-    if nsError.domain == HKErrorDomain {
-        switch errorCode {
-        case HKError.errorAuthorizationNotDetermined.rawValue:
-            errorType = "authorization_not_determined"
-        case HKError.errorAuthorizationDenied.rawValue:
-            errorType = "authorization_denied"
-        case HKError.errorAuthorizationRestricted.rawValue:
-            errorType = "authorization_restricted"
-        case HKError.errorInvalidArgument.rawValue:
-            errorType = "invalid_argument"
-        case HKError.errorDatabaseInaccessible.rawValue:
-            errorType = "database_inaccessible"
-        // Handle errorNoData with iOS version check
+private func convertError(_ error: Error) -> FlutterError {
+    var errorCode: String
+    if let error = error as? HKError {
+        switch error.code {
+        case .noError:
+            errorCode = "no_error"
+        case .errorHealthDataUnavailable:
+            errorCode = "health_data_unavailable"
+        case .errorHealthDataRestricted:
+            errorCode = "health_data_restricted"
+        case .errorInvalidArgument:
+            errorCode = "invalid_argument"
+        case .errorAuthorizationDenied:
+            errorCode = "authorization_denied"
+        case .errorAuthorizationNotDetermined:
+            errorCode = "authorization_not_determined"
+        case .errorRequiredAuthorizationDenied:
+            errorCode = "required_authorization_denied"
+        case .errorDatabaseInaccessible:
+            errorCode = "database_inaccessible"
+        case .errorUserCanceled:
+            errorCode = "user_canceled"
+        case .errorAnotherWorkoutSessionStarted:
+            errorCode = "another_workout_session_started"
+        case .errorUserExitedWorkoutSession:
+            errorCode = "user_exited_workout_session"
+        case .errorBackgroundWorkoutSessionNotAllowed:
+            errorCode = "background_workout_session_not_allowed"
+        case .errorDataSizeExceeded:
+            errorCode = "data_size_exceeded"
+        case .errorNotPermissibleForGuestUserMode:
+            errorCode = "not_permissible_for_guest_user_mode"
+        case .errorWorkoutActivityNotAllowed:
+            errorCode = "workout_activity_not_allowed"
+        case .unknownError:
+            errorCode = "unknown_error"
         default:
             if #available(iOS 14.0, *) {
-                if errorCode == HKError.errorNoData.rawValue {
-                    errorType = "no_data"
+                if error.code == HKError.errorNoData {
+                    errorCode = "no_data"
                 } else {
-                    errorType = "unknown_healthkit_error"
+                    errorCode = "unknown_healthkit_error"
                 }
             } else {
-                errorType = "unknown_healthkit_error"
+                errorCode = "unknown_healthkit_error"
             }
         }
     } else {
-        // Not a HealthKit error
-        errorType = "general_error"
+        errorCode = "general_error"
     }
-
-    // Add any additional error information
-    if let failureReason = nsError.localizedFailureReason {
-        errorDetails["failureReason"] = failureReason
-    }
-    if let recoverySuggestion = nsError.localizedRecoverySuggestion {
-        errorDetails["recoverySuggestion"] = recoverySuggestion
-    }
-
     return FlutterError(
-        code: errorType,
+        code: errorCode,
         message: error.localizedDescription,
-        details: errorDetails
+        details: nil
     )
 }
 
@@ -2082,7 +2078,7 @@ func handleHealthKitCompletion<T>(
 ) {
     DispatchQueue.main.async {
         if let error = error {
-            result(healthKitErrorToFlutterError(error))
+            result(convertError(error))
         } else {
             result(successValue)
         }
