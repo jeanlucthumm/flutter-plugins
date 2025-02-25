@@ -325,13 +325,13 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
         for (index, type) in types.enumerated() {
             let sampleType = dataTypeLookUp(key: type)
-            let success = hasPermission(type: sampleType, access: permissions[index])
+            let success = try hasPermission(type: sampleType, access: permissions[index])
             if success == nil || success == false {
                 result(success)
                 return
             }
             if let characteristicType = characteristicsTypesDict[type] {
-                let characteristicSuccess = hasPermission(
+                let characteristicSuccess = try hasPermission(
                     type: characteristicType, access: permissions[index]
                 )
                 if characteristicSuccess == nil || characteristicSuccess == false {
@@ -1023,7 +1023,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         ) { [weak self] _, samplesOrNil, error in
             guard let self = self else { return }
             if let err = error {
-                handleHealthKitCompletion<[String: Any]>(result, successValue: nil, error: err)
+                handleHealthKitCompletion(result, successValue: nil as [String: Any]?, error: err)
                 return
             }
 
@@ -1978,7 +1978,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
 
             if let error = error {
-                handleHealthKitCompletion<[String: Any]>(result, error: error)
+                handleHealthKitCompletion(result, successValue: nil as [String: Any]?, error: error)
                 return
             }
 
@@ -2018,35 +2018,49 @@ private func healthKitErrorToFlutterError(_ error: Error) -> FlutterError {
     let nsError = error as NSError
 
     // Get the HKError code if this is a HealthKit error
-    let hkError = nsError as? HKError
-    let errorCode = hkError?.code.rawValue ?? nsError.code
+    let errorCode = nsError.code
 
     // Create base error details
     var errorDetails: [String: Any] = [
         "error": error.localizedDescription,
         "errorCode": errorCode,
+        "domain": nsError.domain,
     ]
 
     // Determine specific error type and add appropriate metadata
     let errorType: String
-    switch errorCode {
-    case HKError.Code.errorAuthorizationNotDetermined.rawValue:
-        errorType = "authorization_not_determined"
-    case HKError.Code.errorAuthorizationDenied.rawValue:
-        errorType = "authorization_denied"
-    case HKError.Code.errorAuthorizationRestricted.rawValue:
-        errorType = "authorization_restricted"
-    case HKError.Code.errorInvalidArgument.rawValue:
-        errorType = "invalid_argument"
-    case HKError.Code.errorDatabaseInaccessible.rawValue:
-        errorType = "database_inaccessible"
-    case HKError.Code.errorNoData.rawValue:
-        errorType = "no_data"
-    default:
-        errorType = "unknown_error"
+
+    // Check if this is a HealthKit error
+    if nsError.domain == HKErrorDomain {
+        switch errorCode {
+        case HKError.errorAuthorizationNotDetermined.rawValue:
+            errorType = "authorization_not_determined"
+        case HKError.errorAuthorizationDenied.rawValue:
+            errorType = "authorization_denied"
+        case HKError.errorAuthorizationRestricted.rawValue:
+            errorType = "authorization_restricted"
+        case HKError.errorInvalidArgument.rawValue:
+            errorType = "invalid_argument"
+        case HKError.errorDatabaseInaccessible.rawValue:
+            errorType = "database_inaccessible"
+        // Handle errorNoData with iOS version check
+        default:
+            if #available(iOS 14.0, *) {
+                if errorCode == HKError.errorNoData.rawValue {
+                    errorType = "no_data"
+                } else {
+                    errorType = "unknown_healthkit_error"
+                }
+            } else {
+                errorType = "unknown_healthkit_error"
+            }
+        }
+    } else {
+        // Not a HealthKit error
+        errorType = "general_error"
     }
 
-    // Add any additional HealthKit-specific error information
+    // Add any additional error information
     if let failureReason = nsError.localizedFailureReason {
         errorDetails["failureReason"] = failureReason
     }
