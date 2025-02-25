@@ -486,6 +486,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
 
         let audiogram: HKAudiogramSample
+        let metadataReceived = (arguments["metadata"] as? [String: Any]?)
 
         if metadataReceived != nil {
             guard let deviceName = metadataReceived?!["HKDeviceName"] as? String else { return }
@@ -939,11 +940,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         else {
             throw PluginError(message: "Invalid Arguments")
         }
-        let dataUnitKey = (arguments?["dataUnitKey"] as? String)
-        let startTime = (arguments?["startTime"] as? NSNumber) ?? 0
-        let endTime = (arguments?["endTime"] as? NSNumber) ?? 0
-        let limit = (arguments?["limit"] as? Int) ?? HKObjectQueryNoLimit
-        let recordingMethodsToFilter = (arguments?["recordingMethodsToFilter"] as? [Int]) ?? []
+        let dataUnitKey = arguments["dataUnitKey"] as? String
+        let startTime = arguments["startTime"] as? NSNumber ?? 0
+        let endTime = arguments["endTime"] as? NSNumber ?? 0
+        let limit = arguments["limit"] as? Int ?? HKObjectQueryNoLimit
+        let recordingMethodsToFilter = (arguments["recordingMethodsToFilter"] as? [Int]) ?? []
         let includeManualEntry = !recordingMethodsToFilter.contains(RecordingMethod.manual.rawValue)
 
         // Convert dates from milliseconds to Date()
@@ -1022,7 +1023,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         ) { [weak self] _, samplesOrNil, error in
             guard let self = self else { return }
             if let err = error {
-                handleHealthKitCompletion(result, successValue: nil, error: err)
+                handleHealthKitCompletion<[String: Any]>(result, successValue: nil, error: err)
                 return
             }
 
@@ -1977,7 +1978,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
 
             if let error = error {
-                handleHealthKitCompletion(result, error: error)
+                handleHealthKitCompletion<[String: Any]>(result, error: error)
                 return
             }
 
@@ -2037,7 +2038,6 @@ private func healthKitErrorToFlutterError(_ error: Error) -> FlutterError {
         errorType = "authorization_restricted"
     case HKError.Code.errorInvalidArgument.rawValue:
         errorType = "invalid_argument"
-        errorDetails["invalidArgument"] = nsError.userInfo[HKErrorInvalidObjectKey]
     case HKError.Code.errorDatabaseInaccessible.rawValue:
         errorType = "database_inaccessible"
     case HKError.Code.errorNoData.rawValue:
