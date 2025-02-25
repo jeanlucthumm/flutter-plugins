@@ -2062,7 +2062,7 @@ private func healthKitErrorToFlutterError(_ error: Error) -> FlutterError {
 func handleHealthKitCompletion<T>(
     _ result: @escaping FlutterResult,
     successValue: T? = nil,
-    error: Error?,
+    error: Error?
 ) {
     DispatchQueue.main.async {
         if let error = error {
