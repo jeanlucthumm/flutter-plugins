@@ -2019,7 +2019,7 @@ private func healthKitErrorToFlutterError(_ error: Error) -> FlutterError {
 
     // Get the HKError code if this is a HealthKit error
     let hkError = nsError as? HKError
-    let errorCode = hkError?.code ?? nsError.code
+    let errorCode = hkError?.code.rawValue ?? nsError.code
 
     // Create base error details
     var errorDetails: [String: Any] = [
