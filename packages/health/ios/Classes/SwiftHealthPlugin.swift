@@ -3,10 +3,10 @@ import HealthKit
 import UIKit
 
 enum RecordingMethod: Int {
-    case unknown = 0 // RECORDING_METHOD_UNKNOWN (not supported on iOS)
-    case active = 1 // RECORDING_METHOD_ACTIVELY_RECORDED (not supported on iOS)
-    case automatic = 2 // RECORDING_METHOD_AUTOMATICALLY_RECORDED
-    case manual = 3 // RECORDING_METHOD_MANUAL_ENTRY
+    case unknown = 0  // RECORDING_METHOD_UNKNOWN (not supported on iOS)
+    case active = 1  // RECORDING_METHOD_ACTIVELY_RECORDED (not supported on iOS)
+    case automatic = 2  // RECORDING_METHOD_AUTOMATICALLY_RECORDED
+    case manual = 3  // RECORDING_METHOD_MANUAL_ENTRY
 }
 
 public class SwiftHealthPlugin: NSObject, FlutterPlugin {
@@ -293,7 +293,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             let msg = "Method \(error.method) is only available on iOS \(error.iosVersion) or newer"
             result(FlutterError(code: "version_error", message: msg, details: nil))
         } catch {
-            result(FlutterError(code: "unknown_error", message: error.localizedDescription, details: nil))
+            result(
+                FlutterError(
+                    code: "unknown_error", message: error.localizedDescription, details: nil))
         }
     }
 
@@ -304,8 +306,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
     func hasPermissions(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         let arguments = call.arguments as? NSDictionary
         guard var types = arguments?["types"] as? [String],
-              var permissions = arguments?["permissions"] as? [Int],
-              types.count == permissions.count
+            var permissions = arguments?["permissions"] as? [Int],
+            types.count == permissions.count
         else {
             throw PluginError(message: "Invalid Arguments!")
         }
@@ -346,11 +348,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         if #available(iOS 13.0, *) {
             let status = healthStore.authorizationStatus(for: type)
             switch access {
-            case 0: // READ
+            case 0:  // READ
                 return nil
-            case 1: // WRITE
+            case 1:  // WRITE
                 return status == HKAuthorizationStatus.sharingAuthorized
-            default: // READ_WRITE
+            default:  // READ_WRITE
                 return nil
             }
         } else {
@@ -360,9 +362,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func requestAuthorization(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let types = arguments["types"] as? [String],
-              let permissions = arguments["permissions"] as? [Int],
-              permissions.count == types.count
+            let types = arguments["types"] as? [String],
+            let permissions = arguments["permissions"] as? [Int],
+            permissions.count == types.count
         else {
             throw PluginError(message: "Invalid Arguments!")
         }
@@ -395,7 +397,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     case 1:
                         throw PluginError(
                             message:
-                            "Can not ask for reading permissions to the type of \(characteristicsType)"
+                                "Can not ask for reading permissions to the type of \(characteristicsType)"
                         )
                     default:
                         break
@@ -416,12 +418,12 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func writeData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let value = (arguments["value"] as? Double),
-              let type = (arguments["dataTypeKey"] as? String),
-              let unit = (arguments["dataUnitKey"] as? String),
-              let startTime = (arguments["startTime"] as? NSNumber),
-              let endTime = (arguments["endTime"] as? NSNumber),
-              let recordingMethod = (arguments["recordingMethod"] as? Int)
+            let value = (arguments["value"] as? Double),
+            let type = (arguments["dataTypeKey"] as? String),
+            let unit = (arguments["dataUnitKey"] as? String),
+            let startTime = (arguments["startTime"] as? NSNumber),
+            let endTime = (arguments["endTime"] as? NSNumber),
+            let recordingMethod = (arguments["recordingMethod"] as? Int)
         else {
             throw PluginError(message: "Invalid Arguments")
         }
@@ -431,7 +433,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
         let isManualEntry = recordingMethod == RecordingMethod.manual.rawValue
         let metadata: [String: Any] = [
-            HKMetadataKeyWasUserEntered: NSNumber(value: isManualEntry),
+            HKMetadataKeyWasUserEntered: NSNumber(value: isManualEntry)
         ]
 
         let sample: HKObject
@@ -458,11 +460,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func writeAudiogram(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let frequencies = (arguments["frequencies"] as? [Double]),
-              let leftEarSensitivities = (arguments["leftEarSensitivities"] as? [Double]),
-              let rightEarSensitivities = (arguments["rightEarSensitivities"] as? [Double]),
-              let startTime = (arguments["startTime"] as? NSNumber),
-              let endTime = (arguments["endTime"] as? NSNumber)
+            let frequencies = (arguments["frequencies"] as? [Double]),
+            let leftEarSensitivities = (arguments["leftEarSensitivities"] as? [Double]),
+            let rightEarSensitivities = (arguments["rightEarSensitivities"] as? [Double]),
+            let startTime = (arguments["startTime"] as? NSNumber),
+            let endTime = (arguments["endTime"] as? NSNumber)
         else {
             throw PluginError(message: "Invalid Arguments")
         }
@@ -472,7 +474,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
         var sensitivityPoints = [HKAudiogramSensitivityPoint]()
 
-        for index in 0 ... frequencies.count - 1 {
+        for index in 0...frequencies.count - 1 {
             let frequency = HKQuantity(unit: HKUnit.hertz(), doubleValue: frequencies[index])
             let dbUnit = HKUnit.decibelHearingLevel()
             let left = HKQuantity(unit: dbUnit, doubleValue: leftEarSensitivities[index])
@@ -509,11 +511,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func writeBloodPressure(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let systolic = (arguments["systolic"] as? Double),
-              let diastolic = (arguments["diastolic"] as? Double),
-              let startTime = (arguments["startTime"] as? NSNumber),
-              let endTime = (arguments["endTime"] as? NSNumber),
-              let recordingMethod = (arguments["recordingMethod"] as? Int)
+            let systolic = (arguments["systolic"] as? Double),
+            let diastolic = (arguments["diastolic"] as? Double),
+            let startTime = (arguments["startTime"] as? NSNumber),
+            let endTime = (arguments["endTime"] as? NSNumber),
+            let recordingMethod = (arguments["recordingMethod"] as? Int)
         else {
             throw PluginError(message: "Invalid Arguments")
         }
@@ -522,7 +524,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
         let isManualEntry = recordingMethod == RecordingMethod.manual.rawValue
         let metadata = [
-            HKMetadataKeyWasUserEntered: NSNumber(value: isManualEntry),
+            HKMetadataKeyWasUserEntered: NSNumber(value: isManualEntry)
         ]
 
         let systolic_sample = HKQuantitySample(
@@ -548,11 +550,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func writeMeal(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let name = (arguments["name"] as? String?),
-              let startTime = (arguments["start_time"] as? NSNumber),
-              let endTime = (arguments["end_time"] as? NSNumber),
-              let mealType = (arguments["meal_type"] as? String?),
-              let recordingMethod = arguments["recordingMethod"] as? Int
+            let name = (arguments["name"] as? String?),
+            let startTime = (arguments["start_time"] as? NSNumber),
+            let endTime = (arguments["end_time"] as? NSNumber),
+            let mealType = (arguments["meal_type"] as? String?),
+            let recordingMethod = arguments["recordingMethod"] as? Int
         else {
             throw PluginError(message: "Invalid Arguments")
         }
@@ -580,8 +582,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             guard let unwrappedValue = value else { continue }
             let unit =
                 key == "calories"
-                    ? HKUnit.kilocalorie()
-                    : key == "water" ? HKUnit.literUnit(with: .milli) : HKUnit.gram()
+                ? HKUnit.kilocalorie()
+                : key == "water" ? HKUnit.literUnit(with: .milli) : HKUnit.gram()
             let nutritionSample = HKQuantitySample(
                 type: HKSampleType.quantityType(forIdentifier: identifier)!,
                 quantity: HKQuantity(unit: unit, doubleValue: unwrappedValue), start: dateFrom,
@@ -608,10 +610,10 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func writeInsulinDelivery(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let units = (arguments["units"] as? Double),
-              let reason = (arguments["reason"] as? NSNumber),
-              let startTime = (arguments["startTime"] as? NSNumber),
-              let endTime = (arguments["endTime"] as? NSNumber)
+            let units = (arguments["units"] as? Double),
+            let reason = (arguments["reason"] as? NSNumber),
+            let startTime = (arguments["startTime"] as? NSNumber),
+            let endTime = (arguments["endTime"] as? NSNumber)
         else {
             throw PluginError(message: "Invalid Arguments")
         }
@@ -633,10 +635,10 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func writeMenstruationFlow(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let flow = (arguments["value"] as? Int),
-              let endTime = (arguments["endTime"] as? NSNumber),
-              let isStartOfCycle = (arguments["isStartOfCycle"] as? NSNumber),
-              let recordingMethod = (arguments["recordingMethod"] as? Int)
+            let flow = (arguments["value"] as? Int),
+            let endTime = (arguments["endTime"] as? NSNumber),
+            let isStartOfCycle = (arguments["isStartOfCycle"] as? NSNumber),
+            let recordingMethod = (arguments["recordingMethod"] as? Int)
         else {
             throw PluginError(
                 message: "Invalid Arguments - value, startTime, endTime or isStartOfCycle invalid")
@@ -674,10 +676,10 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func writeWorkoutData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let activityType = (arguments["activityType"] as? String),
-              let startTime = (arguments["startTime"] as? NSNumber),
-              let endTime = (arguments["endTime"] as? NSNumber),
-              let ac = workoutActivityTypeMap[activityType]
+            let activityType = (arguments["activityType"] as? String),
+            let startTime = (arguments["startTime"] as? NSNumber),
+            let endTime = (arguments["endTime"] as? NSNumber),
+            let ac = workoutActivityTypeMap[activityType]
         else {
             throw PluginError(
                 message: "Invalid Arguments - activityType, startTime or endTime invalid")
@@ -910,8 +912,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                                 {
                                     let unit =
                                         key == "calories"
-                                            ? HKUnit.kilocalorie()
-                                            : key == "water"
+                                        ? HKUnit.kilocalorie()
+                                        : key == "water"
                                             ? HKUnit.literUnit(with: .milli) : HKUnit.gram()
                                     sampleDict[key] = quantitySample.quantity.doubleValue(for: unit)
                                 }
@@ -933,7 +935,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     func getData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-              let dataTypeKey = arguments["dataTypeKey"] as? String
+            let dataTypeKey = arguments["dataTypeKey"] as? String
         else {
             throw PluginError(message: "Invalid Arguments")
         }
@@ -968,7 +970,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     "source_id": sourceIdForCharacteristic,
                     "source_name": sourceNameForCharacteristic,
                     "recording_method": RecordingMethod.manual.rawValue,
-                ],
+                ]
             ])
             return
         case "GENDER":
@@ -981,7 +983,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     "source_id": sourceIdForCharacteristic,
                     "source_name": sourceNameForCharacteristic,
                     "recording_method": RecordingMethod.manual.rawValue,
-                ],
+                ]
             ])
             return
         case "BLOOD_TYPE":
@@ -994,7 +996,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                     "source_id": sourceIdForCharacteristic,
                     "source_name": sourceNameForCharacteristic,
                     "recording_method": RecordingMethod.manual.rawValue,
-                ],
+                ]
             ])
             return
         default:
@@ -1145,8 +1147,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
                 do {
                     if let quantity = statisticData.sumQuantity(),
-                       let dataUnitKey = dataUnitKey,
-                       let unit = self.unitDict[dataUnitKey]
+                        let dataUnitKey = dataUnitKey,
+                        let unit = self.unitDict[dataUnitKey]
                     {
                         let dict = [
                             "value": quantity.doubleValue(for: unit),
@@ -1350,7 +1352,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         workoutActivityTypeMap["FLEXIBILITY"] = .flexibility
         workoutActivityTypeMap["WALKING"] = .walking
         workoutActivityTypeMap["RUNNING"] = .running
-        workoutActivityTypeMap["RUNNING_TREADMILL"] = .running // Supported due to combining with Android naming
+        workoutActivityTypeMap["RUNNING_TREADMILL"] = .running  // Supported due to combining with Android naming
         workoutActivityTypeMap["WHEELCHAIR_WALK_PACE"] = .wheelchairWalkPace
         workoutActivityTypeMap["WHEELCHAIR_RUN_PACE"] = .wheelchairRunPace
         workoutActivityTypeMap["BIKING"] = .cycling
@@ -1377,7 +1379,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         workoutActivityTypeMap["TABLE_TENNIS"] = .tableTennis
         workoutActivityTypeMap["TENNIS"] = .tennis
         workoutActivityTypeMap["CLIMBING"] = .climbing
-        workoutActivityTypeMap["ROCK_CLIMBING"] = .climbing // Supported due to combining with Android naming
+        workoutActivityTypeMap["ROCK_CLIMBING"] = .climbing  // Supported due to combining with Android naming
         workoutActivityTypeMap["EQUESTRIAN_SPORTS"] = .equestrianSports
         workoutActivityTypeMap["FISHING"] = .fishing
         workoutActivityTypeMap["GOLF"] = .golf
@@ -1735,7 +1737,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             dataTypesDict[HEADACHE_SEVERE] = HKSampleType.categoryType(forIdentifier: .headache)!
 
             headacheType = Set([
-                HKSampleType.categoryType(forIdentifier: .headache)!,
+                HKSampleType.categoryType(forIdentifier: .headache)!
             ])
         }
 
@@ -1948,7 +1950,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         // Convert anchor string to HKQueryAnchor
         var anchor: HKQueryAnchor? = nil
         if let anchorString = anchorString,
-           let anchorData = Data(base64Encoded: anchorString)
+            let anchorData = Data(base64Encoded: anchorString)
         {
             anchor = try? NSKeyedUnarchiver.unarchivedObject(
                 ofClass: HKQueryAnchor.self,
@@ -1990,10 +1992,10 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             // Convert new anchor to string
             var newAnchorString: String? = nil
             if let newAnchor = newAnchor,
-               let anchorData = try? NSKeyedArchiver.archivedData(
-                   withRootObject: newAnchor,
-                   requiringSecureCoding: true
-               )
+                let anchorData = try? NSKeyedArchiver.archivedData(
+                    withRootObject: newAnchor,
+                    requiringSecureCoding: true
+                )
             {
                 newAnchorString = anchorData.base64EncodedString()
             }
