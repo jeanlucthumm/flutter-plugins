@@ -1435,7 +1435,7 @@ class Health {
   Future<AnchoredHealthData> getAnchoredHealthData({
     required HealthDataType dataType,
     String? anchor,
-    int limit = 100,
+    int? limit,
   }) async {
     if (!Platform.isIOS) {
       throw HealthException(
@@ -1448,8 +1448,10 @@ class Health {
       'dataTypeKey': dataType.name,
       'dataUnitKey': dataTypeToUnit[dataType]!.name,
       'anchor': anchor,
-      'limit': limit,
     };
+    if (limit != null) {
+      args['limit'] = limit;
+    }
     try {
       final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
           'getAnchoredData', args);
