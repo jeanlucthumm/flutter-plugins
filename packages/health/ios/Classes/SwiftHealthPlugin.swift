@@ -1935,9 +1935,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             throw PluginError(message: "dataTypeKey argument is missing or not a string")
         }
 
-        guard let limit = arguments["limit"] as? Int else {
-            throw PluginError(message: "limit argument is missing or not an integer")
-        }
+        let limit = arguments["limit"] as? Int ?? HKObjectQueryNoLimit
 
         let anchorString = arguments["anchor"] as? String
         let dataUnitKey = arguments["dataUnitKey"] as? String
